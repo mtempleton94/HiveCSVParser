@@ -90,6 +90,13 @@ def main():
 		metavar='OUTPUTLOCATION',
 		help='output location for generated file')
 
+	# add option for specifying that the first line (headers) should be skipped
+	parser.add_option("-s",  "--skip header", 
+		action="store_true", 
+		dest="skipheader",
+		metavar='SKIPHEADER',
+		help='flag skip first line of file')
+
 	# help requested
 	if len(sys.argv) == 1:
 		parser.parse_args(['--help'])
@@ -106,6 +113,9 @@ def main():
 	# get data types specified for the file
 	dataTypeList = options.datatypes[0].split(",")
 
+	# store skip header flag value
+	skipheader = options.skipheader
+
 	with open(options.file[0], 'rb') as inputFile:
 
 		# open file for writing
@@ -119,42 +129,51 @@ def main():
 				# store values to be writtrn to row
 				writeRow = []
 
-				for item in row:
+				if (skipheader):
+					skipheader = False
+				else:
 
-					if dataTypeList[count] == 'INT':
+					# process each data type passed in for each row
+					for dataType in dataTypeList:
 
-						# remove any non-integer characters
-						pattern = re.compile(r'^[0-9]+$')
-						if not pattern.findall(item):
-							print('Output: INT \"'+ item + '\" contains non numeric characters. These will be removed.')
-							item = re.sub('[^0-9]','', item)
-						writeRow.append(item)    
 
-					elif dataTypeList[count] == 'DECIMAL':
+						# get current row
+						item = row[count]
 
-						# change any instances of commas to decimals
-						pattern = re.compile(r'^[0-9 ,]+$')
-						if ',' in item:
-							print('Output: DECIMAL \"'+ item + '\" contains commas. They will be replaced with decimal points.')
-							item = re.sub(',','.', item)
-						
-						# remove any non-integer or decimal characters
-						pattern = re.compile(r'^[0-9 \.]+$')
-						if not pattern.findall(item):
-							print('Output: DECIMAL \"'+ item + '\" contains invalid characters. These will be removed.')
-							item = re.sub('[^0-9 \.]','', item)
-						writeRow.append(item)
+						if dataType == 'INT':
 
-					else:
+							# remove any non-integer characters
+							pattern = re.compile(r'^[0-9]+$')
+							if not pattern.findall(item):
+								print('Output: INT \"'+ item + '\" contains non numeric characters. These will be removed.')
+								item = re.sub('[^0-9]','', item)
+							writeRow.append(item)    
 
-						# leave strings as they are
-						writeRow.append(item)
+						elif dataType == 'DECIMAL':
 
-					# move to the next data type
-					count = count + 1
+							# change any instances of commas to decimals
+							pattern = re.compile(r'^[0-9 ,]+$')
+							if ',' in item:
+								print('Output: DECIMAL \"'+ item + '\" contains commas. They will be replaced with decimal points.')
+								item = re.sub(',','.', item)
+							
+							# remove any non-integer or decimal characters
+							pattern = re.compile(r'^[0-9 \.]+$')
+							if not pattern.findall(item):
+								print('Output: DECIMAL \"'+ item + '\" contains invalid characters. These will be removed.')
+								item = re.sub('[^0-9 \.]','', item)
+							writeRow.append(item)
 
-				# write the data to the output file
-				csvWriter.writerow(writeRow)
+						else:
+
+							# leave strings as they are
+							writeRow.append(item)
+
+						# move to the next data type
+						count = count + 1
+
+					# write the data to the output file
+					csvWriter.writerow(writeRow)
 
 if __name__ == '__main__':
 	main()
